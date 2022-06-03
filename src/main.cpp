@@ -12,6 +12,7 @@ class cArisPath
 public:
     cArisPath() : minDistance(20) {}
     void generateRandom();
+    void generateTest1();
     void generateLines();
     void draw(wex::shapes &S);
 
@@ -22,11 +23,18 @@ private:
     std::vector<std::pair<int, int>> blueStart;
     std::vector<std::vector<int>> redLine;
     std::vector<std::vector<int>> blueLine;
+
+    /* adjustments required to line location to prevent them being too close
+        0 : no adjustment
+        MAXINT : line not required
+        otherwise adjustment amount
+    */
     std::vector<int> redAdjust;
     std::vector<int> blueAdjust;
     int minDistance;
 
     void adjustCalc();
+    void removeCollisions();
 };
 
 void cArisPath::generateRandom()
@@ -34,14 +42,40 @@ void cArisPath::generateRandom()
     const int maxloc = 800;
 
     srand(time(NULL));
-    countRed = rand() % 10 + 3;
-    countBlue = rand() % 10 + 3;
+    countRed = rand() % 15 + 10;
+    countBlue = rand() % 15 + 10;
 
     for (int k = 0; k < countBlue; k++)
     {
         blueStart.push_back({rand() % maxloc + 100,
                              rand() % maxloc + 100});
     }
+    for (int k = 0; k < countRed; k++)
+    {
+        redStart.push_back({rand() % maxloc + 100,
+                            rand() % maxloc + 100});
+    }
+}
+
+void cArisPath::generateTest1()
+{
+    const int maxloc = 800;
+
+    srand(time(NULL));
+    countRed = 4;
+    countBlue = 3;
+
+    blueStart.push_back({rand() % maxloc + 100,
+                         500});
+    blueStart.push_back({rand() % maxloc + 100,
+                         505});
+    blueStart.push_back({rand() % maxloc + 100,
+                         510});
+    blueStart.push_back({rand() % maxloc + 100,
+                         515});
+    blueStart.push_back({rand() % maxloc + 100,
+                         520});
+
     for (int k = 0; k < countRed; k++)
     {
         redStart.push_back({rand() % maxloc + 100,
@@ -89,12 +123,13 @@ void cArisPath::adjustCalc()
     int i1 = 0;
     for (auto &loc1 : redStart)
     {
-        redAdjust[i1] = 0;
-
         int i2 = 0;
         for (auto &loc2 : redStart)
         {
-            if (fabs(loc1.first - loc2.first) < minDistance)
+            if (fabs(
+                (loc1.first+redAdjust[i1]) - 
+                (loc2.first+redAdjust[i2]))
+                 < minDistance)
             {
                 if (i1 != i2)
                 {
@@ -121,12 +156,13 @@ void cArisPath::adjustCalc()
     i1 = 0;
     for (auto &loc1 : blueStart)
     {
-        blueAdjust[i1] = 0;
-
         int i2 = 0;
         for (auto &loc2 : blueStart)
         {
-            if (fabs(loc1.second - loc2.second) < minDistance)
+            if (fabs(
+                (loc1.second+blueAdjust[i1]) - 
+                (loc2.second+blueAdjust[i2])) 
+                < minDistance)
             {
                 if (i1 != i2)
                 {
@@ -140,6 +176,54 @@ void cArisPath::adjustCalc()
                     }
                     break;
                 }
+            }
+            i2++;
+        }
+        i1++;
+    }
+    removeCollisions();
+}
+void cArisPath::removeCollisions()
+{
+    int i1 = 0;
+    for (auto &loc1 : redStart)
+    {
+        int i2 = 0;
+        for (auto &loc2 : redStart)
+        {
+            if (i1 == i2)
+                continue;
+
+            if (redAdjust[i1] == MAXINT || redAdjust[i2] == MAXINT)
+                continue;
+
+            if (fabs(
+                    (loc1.first + redAdjust[i1]) -
+                    (loc2.first + redAdjust[i2])) < minDistance)
+            {
+                redAdjust[i1] = MAXINT;
+            }
+            i2++;
+        }
+        i1++;
+    }
+    i1 = 0;
+    for (auto &loc1 : blueStart)
+    {
+        int i2 = 0;
+        for (auto &loc2 : blueStart)
+        {
+            if (i1 == i2)
+                continue;
+
+            if (blueAdjust[i1] == MAXINT || blueAdjust[i2] == MAXINT)
+                continue;
+
+            if (fabs(
+                    (loc1.second + blueAdjust[i1]) -
+                    (loc2.second + blueAdjust[i2])) < minDistance)
+            {
+                blueAdjust[i1] = MAXINT;
             }
             i2++;
         }
@@ -168,6 +252,9 @@ void cArisPath::generateLines()
                  screentop,
                  x,
                  screenbottom});
+        }
+        else if (redAdjust[i1] == MAXINT)
+        {
         }
         else
         {
@@ -209,6 +296,9 @@ void cArisPath::generateLines()
                  screenright,
                  y});
         }
+        else if (blueAdjust[i1] == MAXINT)
+        {
+        }
         else
         {
             y += blueAdjust[i1];
@@ -248,6 +338,7 @@ public:
     {
 
         myPath.generateRandom();
+         //myPath.generateTest1();
         myPath.generateLines();
 
         fm.events().draw(
