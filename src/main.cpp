@@ -7,6 +7,29 @@
 #include <wex.h>
 #include "cStarterGUI.h"
 
+class cStart
+{
+public:
+    cStart(int locx, int locy, bool fred)
+        : x(locx), y(locy), red(fred),
+        adjust(0)
+    {
+    }
+    int locAdjusted()
+    {
+        if (red)
+            return x + adjust;
+        else
+            return y + adjust;
+    }
+
+    int x;
+    int y;
+    bool red;
+    int adjust;
+    std::vector<std::vector<int>> vline;
+};
+
 class cArisPath
 {
 public:
@@ -19,18 +42,18 @@ public:
 private:
     int countRed;
     int countBlue;
-    std::vector<std::pair<int, int>> redStart;
-    std::vector<std::pair<int, int>> blueStart;
-    std::vector<std::vector<int>> redLine;
-    std::vector<std::vector<int>> blueLine;
+    std::vector<cStart> redStart;
+    std::vector<cStart> blueStart;
+    // std::vector<std::vector<int>> redLine;
+    // std::vector<std::vector<int>> blueLine;
 
-    /* adjustments required to line location to prevent them being too close
-        0 : no adjustment
-        MAXINT : line not required
-        otherwise adjustment amount
-    */
-    std::vector<int> redAdjust;
-    std::vector<int> blueAdjust;
+    // /* adjustments required to line location to prevent them being too close
+    //     0 : no adjustment
+    //     MAXINT : line not required
+    //     otherwise adjustment amount
+    // */
+    // std::vector<int> redAdjust;
+    // std::vector<int> blueAdjust;
     int minDistance;
 
     void adjustCalc();
@@ -47,13 +70,17 @@ void cArisPath::generateRandom()
 
     for (int k = 0; k < countBlue; k++)
     {
-        blueStart.push_back({rand() % maxloc + 100,
-                             rand() % maxloc + 100});
+        blueStart.push_back(cStart(
+            rand() % maxloc + 100,
+            rand() % maxloc + 100,
+            false));
     }
     for (int k = 0; k < countRed; k++)
     {
-        redStart.push_back({rand() % maxloc + 100,
-                            rand() % maxloc + 100});
+        redStart.push_back(cStart(
+            rand() % maxloc + 100,
+            rand() % maxloc + 100,
+            true));
     }
 }
 
@@ -65,21 +92,21 @@ void cArisPath::generateTest1()
     countRed = 4;
     countBlue = 3;
 
-    blueStart.push_back({rand() % maxloc + 100,
-                         500});
-    blueStart.push_back({rand() % maxloc + 100,
-                         505});
-    blueStart.push_back({rand() % maxloc + 100,
-                         510});
-    blueStart.push_back({rand() % maxloc + 100,
-                         515});
-    blueStart.push_back({rand() % maxloc + 100,
-                         520});
+    blueStart.push_back(cStart(rand() % maxloc + 100,
+                         500, false));
+    blueStart.push_back(cStart(rand() % maxloc + 100,
+                         505, false));
+    blueStart.push_back(cStart(rand() % maxloc + 100,
+                         510, false));
+    blueStart.push_back(cStart(rand() % maxloc + 100,
+                         515, false));
+    blueStart.push_back(cStart(rand() % maxloc + 100,
+                         520, false));
 
     for (int k = 0; k < countRed; k++)
     {
-        redStart.push_back({rand() % maxloc + 100,
-                            rand() % maxloc + 100});
+        redStart.push_back(cStart(rand() % maxloc + 100,
+                            rand() % maxloc + 100, true));
     }
 }
 
@@ -91,59 +118,59 @@ void cArisPath::draw(wex::shapes &S)
     for (auto &loc : redStart)
     {
         S.circle(
-            loc.first,
-            loc.second,
+            loc.x,
+            loc.y,
             10);
     }
     S.color(0xFF0000);
     for (auto &loc : blueStart)
     {
         S.circle(
-            loc.first,
-            loc.second,
+            loc.x,
+            loc.y,
             10);
     }
 
     S.penThick(2);
     S.color(0x0000FF);
-    for (auto &line : redLine)
+    for (auto &start : redStart)
     {
-        S.line(line);
+        for (auto &l : start.vline)
+        {
+            S.line(l);
+        }
     }
     S.color(0xFF0000);
-    for (auto &line : blueLine)
+    for (auto &start : blueStart)
     {
-        S.line(line);
+        for (auto &l : start.vline)
+        {
+            S.line(l);
+        }
     }
 }
 
 void cArisPath::adjustCalc()
 {
-    redAdjust.resize(redStart.size());
     int i1 = 0;
-    for (auto &loc1 : redStart)
+    for (auto &start1 : redStart)
     {
         int i2 = 0;
-        for (auto &loc2 : redStart)
+        for (auto &start2 : redStart)
         {
-            if (fabs(
-                (loc1.first+redAdjust[i1]) - 
-                (loc2.first+redAdjust[i2]))
-                 < minDistance)
+            if (fabs(start1.locAdjusted() - start2.locAdjusted()) < minDistance)
             {
                 if (i1 != i2)
                 {
-                    std::cout << "adjust " << i1 << " too close to " << i2
-                              << " " << loc1.first << " " << loc2.first << "\n";
-                    if (loc1.first <= loc2.first)
+                    // std::cout << "adjust " << i1 << " too close to " << i2
+                    //           << " " << loc1.first << " " << loc2.first << "\n";
+                    if (start1.x <= start2.y)
                     {
-                        redAdjust[i1] = -minDistance / 2;
-                        std::cout << "left\n";
+                        start1.adjust = -minDistance / 2;
                     }
                     else
                     {
-                        redAdjust[i1] = minDistance / 2;
-                        std::cout << "right\n";
+                        start1.adjust = minDistance / 2;
                     }
                     break;
                 }
@@ -151,28 +178,27 @@ void cArisPath::adjustCalc()
             i2++;
         }
         i1++;
+
+        std::cout << start1.x <<" "<< start1.adjust <<" ";
     }
-    blueAdjust.resize(blueStart.size());
+
     i1 = 0;
-    for (auto &loc1 : blueStart)
+    for (auto &start1 : blueStart)
     {
         int i2 = 0;
-        for (auto &loc2 : blueStart)
+        for (auto &start2 : blueStart)
         {
-            if (fabs(
-                (loc1.second+blueAdjust[i1]) - 
-                (loc2.second+blueAdjust[i2])) 
-                < minDistance)
+            if (fabs(fabs(start1.locAdjusted() - start2.locAdjusted()) < minDistance))
             {
                 if (i1 != i2)
                 {
-                    if (loc1.second <= loc2.second)
+                    if (start1.y <= start2.y)
                     {
-                        blueAdjust[i1] = -minDistance / 2;
+                        start1.adjust = -minDistance / 2;
                     }
                     else
                     {
-                        blueAdjust[i1] = minDistance / 2;
+                        start1.adjust = minDistance / 2;
                     }
                     break;
                 }
@@ -185,49 +211,48 @@ void cArisPath::adjustCalc()
 }
 void cArisPath::removeCollisions()
 {
-    int i1 = 0;
-    for (auto &loc1 : redStart)
+    int i1 = -1;
+    for (auto &start1 : redStart)
     {
-        int i2 = 0;
-        for (auto &loc2 : redStart)
+        i1++;
+        int i2 = -1;
+        for (auto &start2 : redStart)
         {
+            i2++;
             if (i1 == i2)
                 continue;
 
-            if (redAdjust[i1] == MAXINT || redAdjust[i2] == MAXINT)
+            if (start1.adjust == MAXINT || start2.adjust == MAXINT)
                 continue;
 
-            if (fabs(
-                    (loc1.first + redAdjust[i1]) -
-                    (loc2.first + redAdjust[i2])) < minDistance)
+            if (fabs(start1.locAdjusted() - start2.locAdjusted()) < minDistance)
             {
-                redAdjust[i1] = MAXINT;
+                // std::cout << "collision " << start1.locAdjusted() 
+                //     <<" "<< start2.locAdjusted() 
+                //     <<" "<< i1 <<" "<< i2 << "\n";
+                start1.adjust = MAXINT;
             }
-            i2++;
         }
-        i1++;
     }
-    i1 = 0;
-    for (auto &loc1 : blueStart)
+    i1 = -1;
+    for (auto &start1 : blueStart)
     {
-        int i2 = 0;
-        for (auto &loc2 : blueStart)
+        i1++;
+        int i2 = -1;
+        for (auto &start2 : blueStart)
         {
+            i2++;
             if (i1 == i2)
                 continue;
 
-            if (blueAdjust[i1] == MAXINT || blueAdjust[i2] == MAXINT)
+            if (start1.adjust == MAXINT || start2.adjust == MAXINT)
                 continue;
 
-            if (fabs(
-                    (loc1.second + blueAdjust[i1]) -
-                    (loc2.second + blueAdjust[i2])) < minDistance)
+            if (fabs(start1.locAdjusted() - start2.locAdjusted()) < minDistance)
             {
-                blueAdjust[i1] = MAXINT;
+                start1.adjust = MAXINT;
             }
-            i2++;
         }
-        i1++;
     }
 }
 
@@ -240,90 +265,86 @@ void cArisPath::generateLines()
 
     adjustCalc();
 
-    int i1 = 0;
-    for (auto &loc : redStart)
+    for (auto &start : redStart)
     {
-        int x = loc.first;
+        int x = start.x;
 
-        if (redAdjust[i1] == 0)
+        if (start.adjust == 0)
         {
-            redLine.push_back(
+            start.vline.push_back(
                 {x,
                  screentop,
                  x,
                  screenbottom});
         }
-        else if (redAdjust[i1] == MAXINT)
+        else if (start.adjust == MAXINT)
         {
         }
         else
         {
-            x += redAdjust[i1];
-            redLine.push_back(
+            x = start.locAdjusted();
+            start.vline.push_back(
                 {x,
                  screentop,
                  x,
-                 loc.second - minDistance});
-            redLine.push_back(
+                 start.y - minDistance});
+            start.vline.push_back(
                 {x,
-                 loc.second - minDistance,
-                 loc.first,
-                 loc.second});
-            redLine.push_back(
-                {loc.first,
-                 loc.second,
+                 start.y - minDistance,
+                 start.x,
+                 start.y});
+            start.vline.push_back(
+                {start.x,
+                 start.y,
                  x,
-                 loc.second + minDistance});
-            redLine.push_back(
+                 start.y + minDistance});
+            start.vline.push_back(
                 {x,
-                 loc.second + minDistance,
+                 start.y + minDistance,
                  x,
                  screenbottom});
         }
-        i1++;
     }
 
-    i1 = 0;
-    for (auto &loc : blueStart)
+    for (auto &start : blueStart)
     {
-        int y = loc.second;
+        int y = start.y;
 
-        if (blueAdjust[i1] == 0)
+        if (start.adjust == 0)
         {
-            blueLine.push_back(
+            start.vline.push_back(
                 {screenleft,
                  y,
                  screenright,
                  y});
         }
-        else if (blueAdjust[i1] == MAXINT)
+        else if (start.adjust == MAXINT)
         {
         }
         else
         {
-            y += blueAdjust[i1];
-            blueLine.push_back(
+            y = start.locAdjusted();
+            start.vline.push_back(
                 {screenleft,
                  y,
-                 loc.first - minDistance,
+                 start.x - minDistance,
                  y});
-            blueLine.push_back(
-                {loc.first - minDistance,
+            start.vline.push_back(
+                {start.x - minDistance,
                  y,
-                 loc.first,
-                 loc.second});
-            blueLine.push_back(
-                {loc.first,
-                 loc.second,
-                 loc.first + minDistance,
+                 start.x,
+                 start.y});
+            start.vline.push_back(
+                {start.x,
+                 start.y,
+                 start.x + minDistance,
                  y});
-            blueLine.push_back(
-                {loc.first + minDistance,
+            start.vline.push_back(
+                {start.x + minDistance,
                  y,
                  screenright,
                  y});
         }
-        i1++;
     }
 }
 
@@ -338,7 +359,7 @@ public:
     {
 
         myPath.generateRandom();
-         //myPath.generateTest1();
+        //myPath.generateTest1();
         myPath.generateLines();
 
         fm.events().draw(
