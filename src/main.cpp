@@ -14,6 +14,16 @@ public:
 
     bool isInside(int x, int y) const;
 
+    /** Clip line by polygon
+     * @param[in,out] x1,y1 1st endpoint of line
+     * @param[in,out] x2,y2 2nd endpoint of line
+     * 
+     * Assumes the polygon is closed( first vertex == last vertex )
+     * so the edges can be easily iterated over.
+     * 
+     * Assumes line is vertical or horizontal
+     * and first end point closest to top left
+     */
     void clip(
         int &x1, int &y1,
         int &x2, int &y2);
@@ -241,7 +251,6 @@ private:
     void adjustCalc();
     void removeCollisions();
 
-    // bool isInside(int x, int y) const;
 };
 
 int cStart::lastID = 0;
@@ -507,49 +516,6 @@ void cArisPath::generateLines()
     for (auto &start : vStart)
         start.clipLines(myRegion);
 }
-
-// bool cArisPath::isInside(int x, int y) const
-// {
-//     typedef std::vector<std::pair<int, int>>::const_iterator it_t;
-//     int c = 0;
-//     it_t j = myRegion.end() - 1;
-//     for (it_t i = myRegion.begin();
-//          i != myRegion.end(); j = i++)
-//     {
-//         if (((i->second > y) != (j->second > y)) &&
-//             (x < (j->first - i->first) * (y - i->second) /
-//                          (j->second - i->second) +
-//                      i->first))
-//             c = !c;
-//     }
-//     return (c == 1);
-// }
-
-// bool get_line_intersection(float p0_x, float p0_y, float p1_x, float p1_y,
-//                            float p2_x, float p2_y, float p3_x, float p3_y, float *i_x, float *i_y)
-// {
-//     float s1_x, s1_y, s2_x, s2_y;
-//     s1_x = p1_x - p0_x;
-//     s1_y = p1_y - p0_y;
-//     s2_x = p3_x - p2_x;
-//     s2_y = p3_y - p2_y;
-
-//     float s, t;
-//     s = (-s1_y * (p0_x - p2_x) + s1_x * (p0_y - p2_y)) / (-s2_x * s1_y + s1_x * s2_y);
-//     t = (s2_x * (p0_y - p2_y) - s2_y * (p0_x - p2_x)) / (-s2_x * s1_y + s1_x * s2_y);
-
-//     if (s >= 0 && s <= 1 && t >= 0 && t <= 1)
-//     {
-//         // Collision detected
-//         if (i_x != NULL)
-//             *i_x = p0_x + (t * s1_x);
-//         if (i_y != NULL)
-//             *i_y = p0_y + (t * s1_y);
-//         return true;
-//     }
-
-//     return false; // No collision
-// }
 
 class cGUI : public cStarterGUI
 {
